@@ -1,0 +1,151 @@
+---
+title: "STA440 Individual Project"
+author: "Amber Potter"
+date: '2022-12-17'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Data
+
+## The `baseballr` Package
+
+This analysis uses 2021 Statcast data from Bill Petti's `baseballr` package. This data contains pitch-level information, including a separate observation for each pitch during the season, including pre-season, regular season, and post-season games. In 2021, alone, this includes 797,290 pitches, each with 93 recorded variables. Statcast technology was introduced in all 30 MLB stadiums in 2015, and has since recorded information about each pitch, the game situation of that pitch, and other player/inning related context. Because this analysis focuses only on balls batted into play, this original dataset is filtered down greatly as described:
+
+- Filtered to only include regular season and post-season games (excluding exhibition and Spring training games)
+
+- Filtered to only include batters with at least ****** at-bats during the season
+
+- Filtered to only included observations with `type = X` (representing batted ball events)
+
+- Filtered to only included high strikes (`zone = 1, 2, or 3`) and low strikes (`zone = 7, 8, or 9`)
+
+- Filtered to only include batters with more than 50 plate appearances as determined by counting at-bat ending events per player (list of these events can be found in the Appendix)
+
+- Filtered out Eephus pitches, knuckle balls, and knuckle curves
+
+
+
+
+
+```{r}
+library(baseballr)
+library(tidyverse)
+library(knitr)
+
+statcast_data_2021 <- readRDS("~/CMSAC-Baseball-Project/data/statcast_data_2021.rds")
+```
+
+```{r}
+statcast_data_2021 <- statcast_data_2021 %>%
+  filter(game_type !="E", game_type != "S")
+
+statcast_data_filtered <- statcast_data_2021 %>%
+  filter(game_type !="E", game_type != "S") %>%
+  filter(type == "X") %>%
+  filter(zone %in% c(1,2,3,7,8,9)) %>%
+  mutate(zone_high_low = case_when(zone %in% c(1,2,3) ~ "High Strike",
+                                   zone %in% c(7,8,9) ~ "Low Strike")) %>%
+  filter(batter %in% batters_w_50_atbats) %>%
+  filter(pitch_type != "EP", pitch_type != "KN", pitch_type != "KC") %>%
+  mutate(pitch_type = fct_recode(pitch_type,
+                                    "Fastball" = "FC",
+                                    "Fastball" = "FF",
+                                    "Fastball" = "FS",
+                                    "Fastball" = "FA",
+                                    "Fastball" = "SI",
+                                    "Changeup" = "CH",
+                                    "Breaking ball" = "CU",
+                                    "Breaking ball" = "CS",
+                                    "Breaking ball" = "SL")) %>%
+  mutate(pitch_type = factor(pitch_type, levels = c("Fastball", "Changeup", "Breaking ball")))
+
+statcast_data_filtered %>%
+  group_by(zone_high_low, bb_type) %>%
+  count()
+
+unique(statcast_data_filtered$pitch_type)
+
+
+```
+
+```{r}
+model <- lm(hit_distance_sc ~ zone_high_low + pitch_type + release_speed + stand + p_throws + bb_type + launch_speed, data = statcast_data_filtered)
+
+summary(model)
+```
+
+
+```{r}
+#unique(statcast_data_2021$events)
+atbat_ending_events <- c("triple" , "field_out", "double" , "grounded_into_double_play", "strikeout_double_play" , "sac_fly_double_play" , "hit_into_play", "hit_by_pitch" , "bunt_foul_tip" , "single", "strikeout" , "sac_bunt", "home_run" , "sac_fly" , "hit_by_pitch" , "catcher_interf" , "other_out" , "sac_bunt_double_play" , "foul_tip" ,"triple_play", "fielders_choice" , "double_play", "fielders_choice_out" , "field_error" ,"force_out", "walk")
+```
+
+```{r}
+statcast_data_2021 %>%
+  filter(events %in% atbat_ending_events) %>%
+  group_by(batter) %>%
+  count() %>%
+  ggplot(aes(x = n)) +
+  geom_histogram()
+```
+
+
+```{r}
+batters_w_50_atbats <- statcast_data_2021 %>%
+  filter(events %in% atbat_ending_events) %>%
+  group_by(batter) %>%
+  count() %>%
+  filter(n >= 50) %>%
+  pull(batter)
+  
+```
+
+
+```{r}
+statcast_data_filtered %>%
+  group_by(batter) %>%
+  count() %>%
+  ggplot(aes(x = n)) +
+  geom_histogram()
+```
+
+
+
+
+```{r}
+library(readr)
+astros_data_sample <- read_csv("~/Job Applications/data/astros_data_sample.csv")
+View(astros_data_sample)
+```
+
+```{r}
+astros_data_sample_filtered <- astros_data_sample %>%
+  mutate(year = as.factor(year)) %>%
+  filter(!is.na(hit_distance))
+  
+
+unique(astros_data_sample$event_result)
+model <- lm(hit_distance ~ ., data = astros_data_sample)
+
+summary(model)
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+# Appendix
+
+At-bat ending events: "triple" , "field_out", "double" , "grounded_into_double_play", "strikeout_double_play" , "sac_fly_double_play" , "hit_into_play", "hit_by_pitch" , "bunt_foul_tip" , "single", "strikeout" , "sac_bunt", "home_run" , "sac_fly" , "hit_by_pitch" , "catcher_interf" , "other_out" , "sac_bunt_double_play" , "foul_tip" ,"triple_play", "fielders_choice" , "double_play", "fielders_choice_out" , "field_error" ,"force_out", "walk"
