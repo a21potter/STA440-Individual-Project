@@ -140,7 +140,55 @@ Another assumption that must be satisfied for the proportional hazards model is 
 ##################
 
 
+# Results
 
+```{r}
+library(broom)
+library(knitr)
+tidy_logit_model <- tidy(logit_model)
+
+exp_model_coefs <- as_tibble(exp(tidy_logit_model$estimate))
+
+conf_int <- confint(logit_model)
+model_conf_int_2.5 <- as_tibble(exp(conf_int))[,1]
+model_conf_int_97.5 <- as_tibble(exp(conf_int))[,2]
+
+model_variables <- as_tibble(c(names(logit_model$coefficients)))
+
+
+model_pvals <- as.data.frame(coef(summary(logit_model))[,4])[,1]
+
+
+Variables <- c("(Intercept)", "Hit Distance (ft)", "Pitch Zone (Low)", "Pitch Type (Changeup)", "Pich Type (Breaking Ball)", "Release Speed", "Batter Stance Side", "Pitcher Handedness", "Batted Ball Type (Ground Ball)", "Batted Ball Type (Line Drive)", "Batted Ball Type (Popup)", "Launch Speed", "Pitch Zone (Low)*Batted Ball Type (Ground Ball)", "Pitch Zone (Low)*Batted Ball Type (Line Drive)", "Pitch Zone (Low)*Batted Ball Type (Popup)")
+
+model_output_full <- data.frame(Variables, 
+           exp_model_coefs, 
+           model_conf_int_2.5,
+           model_conf_int_97.5, 
+           model_pvals) %>%
+   mutate(model_pvals = if_else(model_pvals < 0.001, 0.000, model_pvals),
+         model_pvals = ceiling(model_pvals*1000)/1000,
+        model_pvals = as.character(model_pvals),
+        model_pvals = if_else(model_pvals == "0", "<0.001", model_pvals)) %>% 
+  kable(digits = 3, col.names = c("Variables", "Odds Ratio Coefficient", "95% Odds Ratio CI Lower Bound", "95% Odds Ratio CI Upper Bound", "P-Value (alpha = 0.05)"), caption = "Results of logistic regression model", align = 'lrrrr')
+
+model_output_full
+
+
+```
+
+
+In examining the results of our type of subsequent procedure model (Table 1 above), we were first interested in examining associations between length of survival and the type of interventional procedure: CABG or PCI. We saw no significant association between type of procedure and hazard of death, holding all other variables constant. That is, for individuals who have zero diseased vessels and no history of myocardial infarction, cerebrovascular disease, and/or diabetes, we find that those who received the PCI catheterization are expected to have 1.130 times the hazard of death compared to an individual who received the CABG treatment. We found that the confidence interval for this estimate crosses 1  ([0.959, 1.330]), so there is no significant association between hazard of death and type of interventional procedure, for these patients.
+
+However, we then proceeded to look closer into the type of catheterization by looking at interaction effects between comorbidities and type (PCI or CABG). In doing so, we found that there were significant association between the type of catheterization and history of cerebrovascular disease. That is, for individuals with a history of cerebrovascular disease, patients who received the PCI catheterization are expected to have 2.318 [1.967, 2.700] times the hazard compared to an individual who received the CABG treatment. Similarly, PCI is associated with higher hazard for patients with a history of diabetes. That is, for individuals with a history of diabetes, patients who received the PCI catheterization are expected to have 2.251 [1.992, 2.698] times the hazard compared to an individual who received the CABG treatment. This supported our hypothesis that PCI may be associated with worse outcome for patients who have more severe/complicated conditions.
+
+Among the variables we controlled for, we saw that a patient's past history of chronic illness had significant associations with length of survival after catheterization.Holding all other variables in the model constant, an individual who has had previous history of Myocardial Infarction is expected to have 1.242 ([1.149, 1.342]) times the hazard for an individual who has not had a previous history of this condition. This, and all other multiplicative effects discussed below, holds regardless of the time t. Holding all other variables in the model constant, an individual who has had a previous history of Diabetes is expected to have approximately 1.491 ([1.371, 1.621]) times the hazard of death compared to an individual who has not had a previous history of this condition. Holding all other variables in the model constant, an individual who has had a previous history of Cerebrovascular Disease is expected to have approximately 1.608 ([1.441, 1.795]) times the hazard of death compared to an individual who has not had a previous history of this condition.
+
+As expected, there is also a positive association between the number of diseased vessels and survival length. Holding all other variables in the model constant, there is a 1.360 ([1.289, 1.436]) times increase in the expected relative hazard for each one additional increase in the number of significantly diseased vessels.
+
+There were also notable associations between hazard and patient gender. Holding all other variables in the model constant, females are expected to have 1.229 ([1.165, 1.297]) times the hazard of death compared to males.
+
+Interestingly, we do not find any statistically significant associations between hazard and interesting variables such as race and history of smoking.
 
 
 ```{r}
