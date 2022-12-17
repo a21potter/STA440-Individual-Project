@@ -45,7 +45,7 @@ First the daata was filtered to only include regular season and post-season game
 
 For this analysis, the outcome variable being used is the pitch-level batting average on balls in play (BABIP). This value is 1 if the at bat resulted in a ball hit in play that allowed the batter to get on base, and 0 otherwise. Something to note, however, is that in regard to the definition of BABIP according to MLB and as will be used in this analysis, a homerun is not included in 'balls in play' because it does not involve action by the defense. This is appropriate for this analysis because I am considering the greater context of producing action for fans, and balls in play requiring action by the defense help decrease the limitations of the three outcome at-bat.
 
-The primary predictors of interest are whether the pitch was a high strike or a low strike. However, I also control for the type of pitch thrown (fastball, changeup, or breaking ball), the speed of the pitch when released by the pitcher (in mph), the side of the plate the batter stands on (left or right), the handedness of the pitcher (left or right), the batted ball type (ground ball, pop up, line drive, or fly ball), and the launch speed of the ball off the bat (in mph). I also considered including the projected distance the ball was hit, but as I include the type of batted ball which considers hit distance built in to the classification (eg. ground balls are hit into the dirt and have low distances and the only difference between a popup and a fly ball are the distance they travel), I did not think it would be ideal to include both variables. I chose to include batted ball type over distance because I believed that the type may incorporate more information on the action required by the defense to make a play compared to distance alone. All variables included in the model were less than 1% missing after filtering the data as described above (###################Figure 4 from Appendix B). Due to the low rates of missingness, I chose not to impute missing observations and records with missing data were dropped from the analysis.
+The primary predictors of interest are whether the pitch was a high strike or a low strike. However, I also control for the type of pitch thrown (fastball, changeup, or breaking ball), the speed of the pitch when released by the pitcher (in mph), the side of the plate the batter stands on (left or right), the handedness of the pitcher (left or right), the batted ball type (ground ball, pop up, line drive, or fly ball), and the launch speed of the ball off the bat (in mph). I also considered including the projected distance the ball was hit, but as I include the type of batted ball which considers hit distance built in to the classification (eg. ground balls are hit into the dirt and have low distances and the only difference between a popup and a fly ball are the distance they travel), I did not think it would be ideal to include both variables. I chose to include batted ball type over distance because I believed that the type of hit may incorporate more information on the action required by the defense to make a play compared to distance alone. All variables included in the model were less than 1% missing after filtering the data as described above (Appendix C). Due to the low rates of missingness, I chose not to impute missing observations and records with missing data were dropped from the analysis.
 
 
 
@@ -61,7 +61,6 @@ names(statcast_data_2021)[1] <- 'pitch_id'
 
 
 ```{r}
-#unique(statcast_data_2021$events)
 atbat_ending_events <- c("triple" , "field_out", "double" , "grounded_into_double_play", "strikeout_double_play" , "sac_fly_double_play" , "hit_into_play", "hit_by_pitch" , "bunt_foul_tip" , "single", "strikeout" , "sac_bunt", "home_run" , "sac_fly" , "hit_by_pitch" , "catcher_interf" , "other_out" , "sac_bunt_double_play" , "foul_tip" ,"triple_play", "fielders_choice" , "double_play", "fielders_choice_out" , "field_error" ,"force_out", "walk")
 ```
 
@@ -97,10 +96,34 @@ statcast_data_filtered <- statcast_data_2021 %>%
   mutate(pitch_type = factor(pitch_type, levels = c("Fastball", "Changeup", "Breaking ball"))) #%>%
   #filter(bb_type != "ground_ball", bb_type != "popup")
 ```
+
 ## EDA
 
-```{r}
+Because of the vague wording of the definition of the strikezone and the dependency the called strikezone has on the judgement of the umpire, I have included a plot displaying the X and Z coordinates of all high and low strikes. In this case, the X coordinate refers to the horizontal distance of the pitch from the center of home plate (in ft) while the Z coordinate refers to the height of the pitch (in ft) as it crosses home plate.
 
+```{r}
+statcast_data_filtered %>%
+  ggplot(aes(x = plate_x, y = plate_z, color = zone_high_low)) +
+  geom_point(alpha = .1) +
+  theme_bw() +
+  coord_equal() +
+  labs(title = "Height of high strikes around 3 ft, \nheight of low strikes around 2 ft",
+       x = "Horizontal loction of pitch (ft from center of the strikezone)",
+       y = "Vertical loction of pitch (ft from the ground)",
+       caption = "Visualizing the 2021 strikezone, locations of high and low strikes",
+       color = "Strike location")
+  
+```
+
+
+```{r}
+statcast_data_filtered %>%
+  group_by(zone_high_low, events, babip_value) %>%
+  summarize(count_babip = n()) %>%
+  summarize(zone_high_low, events, babip_value, count_babip, prop_babip = count_babip/sum(count_babip)) %>%
+  ggplot(aes(x = events, y = prop_babip, fill = babip_value)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~zone_high_low)
 ```
 
 
