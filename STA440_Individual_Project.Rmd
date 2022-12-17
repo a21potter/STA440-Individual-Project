@@ -99,7 +99,7 @@ statcast_data_filtered <- statcast_data_2021 %>%
 
 ## EDA
 
-Because of the vague wording of the definition of the strikezone and the dependency the called strikezone has on the judgement of the umpire, I have included a plot displaying the X and Z coordinates of all high and low strikes. In this case, the X coordinate refers to the horizontal distance of the pitch from the center of home plate (in ft) while the Z coordinate refers to the height of the pitch (in ft) as it crosses home plate.
+Because of the vague wording of the definition of the strikezone and the dependency the called strikezone has on the judgement of the umpire, I have included a plot displaying the X and Z coordinates of all high and low strikes. In this case, the X coordinate refers to the horizontal distance of the pitch from the center of home plate (in ft) while the Z coordinate refers to the height of the pitch (in ft) as it crosses home plate. This plot helps us visualize the difference between high and low strikes as was observed in 2021. As there is no definitive cutoff for the top or bottom of the strikezone, understanding the observed heights of these strikes is important to understanding how pitch location may be related to balls in play.
 
 ```{r}
 statcast_data_filtered %>%
@@ -115,15 +115,46 @@ statcast_data_filtered %>%
   
 ```
 
-
 ```{r}
-statcast_data_filtered %>%
-  group_by(zone_high_low, events, babip_value) %>%
-  summarize(count_babip = n()) %>%
-  summarize(zone_high_low, events, babip_value, count_babip, prop_babip = count_babip/sum(count_babip)) %>%
-  ggplot(aes(x = events, y = prop_babip, fill = babip_value)) +
-  geom_bar(stat = "identity") +
-  facet_wrap(~zone_high_low)
+set.seed(2134)
+sampled_statcast_data_low <- statcast_data_filtered %>%
+  filter(zone_high_low == "Low Strike") %>%
+  sample_n(round(2000 * 0.6244267), 0) %>%
+  mutate(bb_type_format = case_when(bb_type == "fly_ball" ~ "Fly Ball",
+                                    bb_type == "ground_ball" ~ "Ground Ball",
+                                    bb_type == "line_drive" ~ "Line Drive",
+                                    bb_type == "popup" ~ "Popup"))
+  
+sampled_statcast_data_high <- statcast_data_filtered %>%
+  filter(zone_high_low == "High Strike") %>%
+  sample_n(round(2000 * 0.3755733), 0) %>%
+  mutate(bb_type_format = case_when(bb_type == "fly_ball" ~ "Fly Ball",
+                                    bb_type == "ground_ball" ~ "Ground Ball",
+                                    bb_type == "line_drive" ~ "Line Drive",
+                                    bb_type == "popup" ~ "Popup"))
+
+sampled_statcast_data <- sampled_statcast_data_low %>%
+  rbind(sampled_statcast_data_high)
+
+prop_high_and_low_strikes <- statcast_data_filtered %>%
+  group_by(zone_high_low) %>%
+  count() %>%
+  ungroup() %>%
+  summarize(zone_high_low, n, prop = n/sum(n))
+
+sampled_statcast_data %>%
+  ggplot(aes(x = plate_x, y = plate_z, color = as.factor(babip_value))) +
+  geom_point(alpha = .3) +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  coord_equal() +
+  facet_wrap(~bb_type_format, nrow = 1) +
+  labs(title = "Potential evidence of different relationships between \nBatted Ball Types and Vertical Pitch Location",
+       x = "Horizontal loction of pitch (ft from center of the strikezone)",
+       y = "Vertical loction of pitch (ft from the ground)",
+       caption = "Visualizing the pitch locations of different batted balls,\nusing random sample of 1249 observed low strikes \nand 751 observed high strikes",
+       color = "Batted Ball (Success/Failure)")
+  
 ```
 
 
@@ -465,3 +496,12 @@ residual_plot <- f_resid_bin %>%
   theme_minimal()
 residual_plot
 ```
+
+
+### G: Proportions of High and Low Strikes
+
+```{r}
+prop_high_and_low_strikes %>%
+  kable(digits = 4, col.names = c("Vertical Pitch Loction", "Frequency", "Proportion"), caption  = "Determining the proportions of high and low strikes in 2021")
+```
+
