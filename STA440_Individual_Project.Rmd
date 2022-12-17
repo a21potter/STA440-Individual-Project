@@ -3,6 +3,7 @@ title: "STA440 Individual Project: Examining the Relationship between Vertical P
 author: "Amber Potter"
 date: '2022-12-16'
 output: pdf_document
+geometry: margin=2.5cm
 ---
 
 ```{r setup, include=FALSE}
@@ -275,6 +276,8 @@ Edwards, C. (2018, June 15). A bigger strike zone is a bad idea. FanGraphs Baseb
 
 Edwards, C. (2018, June 21). What a smaller strike zone can do for pace of play. FanGraphs Baseball. Retrieved December 16, 2022, from https://blogs.fangraphs.com/what-a-smaller-strike-zone-can-do-for-pace-of-play/ 
 
+Petti B, Gilani S (2022). baseballr: Acquiring and Analyzing Baseball Data. https://billpetti.github.io/baseballr/, https://github.com/BillPetti/baseballr
+
 Sarris, E. (2017, August 18). How would we increase balls in play? FanGraphs Baseball. Retrieved December 16, 2022, from https://blogs.fangraphs.com/how-would-we-increase-balls-in-play/ 
 
 Strike zone: Glossary. MLB.com. (n.d.). Retrieved December 16, 2022, from https://www.mlb.com/glossary/rules/strike-zone 
@@ -282,7 +285,7 @@ Strike zone: Glossary. MLB.com. (n.d.). Retrieved December 16, 2022, from https:
 What are the pitch types generated from MLB Statcast for speed of pitch? Daktronics. (n.d.). Retrieved December 16, 2022, from https://www.daktronics.com/en-us/support/kb/DD3312647 
 
 
-
+\pagebreak
 
 
 # Appendix
