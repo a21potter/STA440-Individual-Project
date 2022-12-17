@@ -1,7 +1,7 @@
 ---
-title: "STA440 Individual Project"
+title: "STA440 Individual Project: Examining the Relationship between Vertical Pitch Location and the Odds of a Successful Batted Ball in Play"
 author: "Amber Potter"
-date: '2022-12-17'
+date: '2022-12-16'
 output: pdf_document
 ---
 
@@ -93,15 +93,14 @@ statcast_data_filtered <- statcast_data_2021 %>%
                                     "Breaking ball" = "CU",
                                     "Breaking ball" = "KC",
                                     "Breaking ball" = "SL")) %>%
-  mutate(pitch_type = factor(pitch_type, levels = c("Fastball", "Changeup", "Breaking ball"))) #%>%
-  #filter(bb_type != "ground_ball", bb_type != "popup")
+  mutate(pitch_type = factor(pitch_type, levels = c("Fastball", "Changeup", "Breaking ball"))) 
 ```
 
 ## EDA
 
-Because of the vague wording of the definition of the strikezone and the dependency the called strikezone has on the judgement of the umpire, I have included a plot displaying the X and Z coordinates of all high and low strikes. In this case, the X coordinate refers to the horizontal distance of the pitch from the center of home plate (in ft) while the Z coordinate refers to the height of the pitch (in ft) as it crosses home plate. This plot helps us visualize the difference between high and low strikes as was observed in 2021. As there is no definitive cutoff for the top or bottom of the strikezone, understanding the observed heights of these strikes is important to understanding how pitch location may be related to balls in play.
+Because of the vague wording of the definition of the strikezone and the dependency the called strikezone has on the judgement of the umpire, I have included a plot displaying the X and Z coordinates of all high and low strikes relevant to this analysis. In this case, the x-axis refers to the horizontal distance of the pitch from the center of home plate (in ft) while the y-axis refers to the height of the pitch (in ft) as it crosses home plate. This plot helps us visualize the difference between high and low strikes as was observed in 2021. As there is no definitive cutoff for the top or bottom of the strikezone, understanding the observed heights of these strikes is important to understanding how pitch location may be related to balls in play. As is shown, the observed bottom of the strikezone appears to be slightly below 1.5 ft while the observed top of the strikezone appears to be slightly above 3.5 ft. Noticably, the both the observed top and bottom of the strikezone appear to be around a foot in height each, which is taller than the portion of the strikezone deemed the vertical middle.
 
-```{r}
+```{r fig.height = 3}
 statcast_data_filtered %>%
   ggplot(aes(x = plate_x, y = plate_z, color = zone_high_low)) +
   geom_point(alpha = .1) +
@@ -109,11 +108,13 @@ statcast_data_filtered %>%
   coord_equal() +
   labs(title = "Height of high strikes around 3 ft, \nheight of low strikes around 2 ft",
        x = "Horizontal loction of pitch (ft from center of the strikezone)",
-       y = "Vertical loction of pitch (ft from the ground)",
+       y = "Vertical loction of pitch \n(ft from the ground)",
        caption = "Visualizing the 2021 strikezone, locations of high and low strikes",
        color = "Strike location")
   
 ```
+
+Due to the overwhelming number of observations, in order to gain insight on the proportions of batted ball types on different pitch locations and the frequency with which they result in a successful hit, I took a representative random sample of the observed pitches from my filtered data, maintaining the relative proportions of high to low strikes (using randomization seed 2134 for reproducibility). In my sampling of the data I included 2000 observations, 1249 low strikes and 751 high strikes. I used this sample to visualize the location of pitches, their resulting batted ball type, and whether the batted ball was a success. Looking at the results, while it seems that the proportions of successful fly balls on high and low strikes may be similar, there appears to be differences in the frequency with which other batted ball types are successful on high and low strikes. For ground balls, it seems there may be more ground balls hit on low strikes than high strikes while ground balls on low pitches may have a lower proportion of success than ground balls on high pitches. Similar observations can be made about more line drives resulting from low strikes than high strikes. Popups seem to occur more frequently on high strikes than low strikes, but are overall less frequent than other batted ball types. From this visualization, we conclude that it would be useful to consider the batted ball type in the modeling as it may help explain additional patterns in the data.
 
 ```{r}
 set.seed(2134)
@@ -152,7 +153,7 @@ sampled_statcast_data %>%
   labs(title = "Potential evidence of different relationships between \nBatted Ball Types and Vertical Pitch Location",
        x = "Horizontal loction of pitch (ft from center of the strikezone)",
        y = "Vertical loction of pitch (ft from the ground)",
-       caption = "Visualizing the pitch locations of different batted balls,\nusing random sample of 1249 observed low strikes \nand 751 observed high strikes",
+       caption = "Visualizing the pitch locations of different batted balls,\nusing random sample of 1249 observed low strikes and 751 observed high strikes",
        color = "Batted Ball (Success/Failure)")
   
 ```
@@ -268,28 +269,17 @@ Separately, it would be interesting to consider the further implications of chan
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 # References
 
-https://www.mlb.com/glossary/rules/strike-zone
+Edwards, C. (2018, June 15). A bigger strike zone is a bad idea. FanGraphs Baseball. Retrieved December 16, 2022, from https://blogs.fangraphs.com/a-bigger-strike-zone-is-a-bad-idea/ 
 
-https://www.daktronics.com/en-us/support/kb/DD3312647
+Edwards, C. (2018, June 21). What a smaller strike zone can do for pace of play. FanGraphs Baseball. Retrieved December 16, 2022, from https://blogs.fangraphs.com/what-a-smaller-strike-zone-can-do-for-pace-of-play/ 
 
-https://blogs.fangraphs.com/how-would-we-increase-balls-in-play/
+Sarris, E. (2017, August 18). How would we increase balls in play? FanGraphs Baseball. Retrieved December 16, 2022, from https://blogs.fangraphs.com/how-would-we-increase-balls-in-play/ 
 
-https://blogs.fangraphs.com/what-a-smaller-strike-zone-can-do-for-pace-of-play/
+Strike zone: Glossary. MLB.com. (n.d.). Retrieved December 16, 2022, from https://www.mlb.com/glossary/rules/strike-zone 
 
-https://blogs.fangraphs.com/a-bigger-strike-zone-is-a-bad-idea/
+What are the pitch types generated from MLB Statcast for speed of pitch? Daktronics. (n.d.). Retrieved December 16, 2022, from https://www.daktronics.com/en-us/support/kb/DD3312647 
 
 
 
@@ -391,17 +381,7 @@ model.matrix(~0+., statcast_data_filtered_varlabels %>%
 ```{r}
 emplogit = function(x, y, binsize = NULL, ci = FALSE, probit = FALSE,
                     prob = FALSE, main = NULL, xlab = "", ylab = ""){
-  # x         vector with values of the independent variable
-  # y         vector of binary responses
-  # binsize   integer value specifying bin size (optional)
-  # ci        logical value indicating whether to plot approximate
-  #           confidence intervals (not supported as of 02/08/2015)
-  # probit    logical value indicating whether to plot probits instead
-  #           of logits
-  # prob      logical value indicating whether to plot probabilities
-  #           without transforming
-  #
-  # the rest are the familiar plotting options
+
   if (length(x) != length(y))
     stop("x and y lengths differ")
   if (any(y < 0 | y > 1))
@@ -491,14 +471,14 @@ residual_plot <- f_resid_bin %>%
   geom_point() +
   labs(y = "Deviance Residuals",
        x = "Fitted Values",
-       title = "Oscillating pattern of binned deviance residuals for logistic model",
+       title = "Oscillating pattern of binned \ndeviance residuals for logistic model",
        caption = "Appendix plot F: Assessing residuals of logistic model")  +
   theme_minimal()
 residual_plot
 ```
 
 
-### G: Proportions of High and Low Strikes
+## G: Proportions of High and Low Strikes
 
 ```{r}
 prop_high_and_low_strikes %>%
