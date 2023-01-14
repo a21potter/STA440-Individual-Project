@@ -1,0 +1,497 @@
+---
+title: "STA440 Individual Project: Examining the Relationship between Vertical Pitch Location and the Odds of a Successful Batted Ball in Play"
+author: "Amber Potter"
+date: '2022-12-16'
+output: pdf_document
+geometry: margin=2.5cm
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+# Introduction
+
+## Background
+
+Despite Major League Baseball being one of the largest and most popular professional sports leagues in America, recent criticisms have grown in regard to the pace of the game and its relative lack of action compared to other sports. In recent years, the game has seen the growth of the three outcome at-bat, meaning that many batters are trending towards either hitting homeruns, striking out, or walking (MLB.com, Three True Outcomes). This comes from batters prioritizing launch angle and the greater addition to expected runs contributed from homeruns than batted balls in play. Although these extra homeruns are exciting for fans, the number of strikeouts increasing has the opposite effect. With long games and increasingly rare action from batted balls in play, MLB has started looking into potential solutions to fix the pace of game dissatisfaction from fans.
+
+Already there are rules being added for the 2022 season in attempts to address the decrease in action, such as the elimination of the infield shift which was responsible for taking away many base hits by left-handed batters. MLB has also implemented a pitch clock in attempts to speed up the game. Still, much of the discussion about 'fixing baseball' has been made around the strike zone. Automated ball and strike calls seem to be where the game is headed, but there are also talks of changing the strike zone all together.
+
+Changes to the strike zone have been made before in the past, with the last official update to the strike zone being in 1996 when it was defined as the "the midpoint between a batter's shoulders and the top of the uniform pants -- when the batter is in his stance and prepared to swing at a pitched ball -- and a point just below the kneecap" (MLB.com, Strikezone). Additionally, and especially with this indistinct wording, the strike zone as it has been called by umpires has shifted without updates to the rules. For example, from 2007 to 2017 umpires have narrowed but lengthened their strikes zones (Edwards 2018). But what associations does the strike zone have on batted balls in play?
+
+## Research Questions
+
+In this analysis, I aim to investigate the association between high or low strikes and the odds that hitting said strike into play results in getting on base. Specifically, I hypothesize that hitting a low strike decreases the odds of a successful batted ball.
+
+Separately, this analysis will also be looked at through the lens of the following question: Although shifting the strike zone up or down would be a slowly implemented change that would have to begin with lower level leagues and younger players so as to not cause injury or upset among players, are either of these options reasonable for increasing action?
+
+
+## Data
+
+## The `baseballr` Package
+
+This analysis uses 2021 Statcast data from Bill Petti's `baseballr` package. This data contains pitch-level information, including a separate observation for each pitch during the season, including pre-season, regular season, and post-season games. In 2021, alone, this includes 797,290 pitches, each with 93 recorded variables. Statcast technology was introduced in all 30 MLB stadiums in 2015, and has since recorded information about each pitch, the game situation of that pitch, and other player/inning related context. Because this analysis focuses only on balls batted into play, this original dataset is filtered down greatly.
+
+First the daata was filtered to only include regular season and post-season games (excluding exhibition and Spring training games). This was done to eliminate practice games and other games that may not represent a true competitive game. Next, the data was filtered to only included batters with at least 50 at-bats in order to increase the consistency in the quality of at-bats. This was done by counting players with at least 50 at-bat ending events (Appendix A) recorded in the data, then filtering the data for only those players. By using this threshold I eliminate any players that were only called to the majors briefly or players that may not have been good/healthy enough to start frequently. Because I was only interested in comparing the odds of a successful batted ball given that the ball was put in play, I filtered for observations of type "X" which represent batted balls events. This also handled the issue of making sure I don't consider multiple strikes during an at-bat as it is inherently only possible for a batter to hit one pitch they face into play and it is not necessary to hit every strike faced. I also filtered for only high strikes, which were originally labeled to be in zone 1, 2, or 3, or low strikes, which were originally labeled to be in zone 7, 8, or 9. I did this because pitchers generally avoid trying to pitch down the middle as it is easier to hit, but also because I am strictly interested in the difference in the relationships between high and low strikes and the odds of a successful hit. In order to further focus on this goal, I also recoded the zone variable to refer only to the vertical location, with zones 1, 2, and 3 relabeled as high strikes and zones 7, 8, and 9 relabeled as low strikes. I also made the decision to filter for only plays where there was no infield shift. This choice was made with consideration for the fact that the infield shift will no longer be allowed in future seasons. Even though I am not attempting to predict for the future, my goal is still to observe the relationship between pitch location and the odds of a successful ball in play in a way that might be insightful to the possibility of future strikezone changes. With as much data as this still leaves me, I do not believe it will hinder my results and will better allow me to examine the relevant associations on against standard defenses. Lastly, I chose to filter out Eephus pitches (EP), knuckle balls (KN), and screwballs (KC) due to their rarity or inconsistent pitch movement. I also removed pitches labeled as "CS" as their occurrance was rare and it is not clear what type of pitch they represent (Visualization and detailed list of pitch types can be found in the Appendix B). Although fastballs recorded as "FA" also appear to be rare, I simply grouped these in with other types of fastballs. I also simplified pitch type to just fastballs (general fastballs, 4-seam fastballs, splitters/split fastballs, sinkers/2-seam fastballs, and cutters), changeups, and breaking balls (curveballs, knuckle curves, and sliders) as this is often how they are examined by MLB and I do not wish to oversaturate my model with different pitch types.
+
+
+
+
+
+
+
+
+
+
+## Key Variables
+
+For this analysis, the outcome variable being used is the pitch-level batting average on balls in play (BABIP). This value is 1 if the at bat resulted in a ball hit in play that allowed the batter to get on base, and 0 otherwise. Something to note, however, is that in regard to the definition of BABIP according to MLB and as will be used in this analysis, a homerun is not included in 'balls in play' because it does not involve action by the defense. This is appropriate for this analysis because I am considering the greater context of producing action for fans, and balls in play requiring action by the defense help decrease the limitations of the three outcome at-bat.
+
+The primary predictors of interest are whether the pitch was a high strike or a low strike. However, I also control for the type of pitch thrown (fastball, changeup, or breaking ball), the speed of the pitch when released by the pitcher (in mph), the side of the plate the batter stands on (left or right), the handedness of the pitcher (left or right), the batted ball type (ground ball, pop up, line drive, or fly ball), and the launch speed of the ball off the bat (in mph). I also considered including the projected distance the ball was hit, but as I include the type of batted ball which considers hit distance built in to the classification (eg. ground balls are hit into the dirt and have low distances and the only difference between a popup and a fly ball are the distance they travel), I did not think it would be ideal to include both variables. I chose to include batted ball type over distance because I believed that the type of hit may incorporate more information on the action required by the defense to make a play compared to distance alone. All variables included in the model were less than 1% missing after filtering the data as described above (Appendix C). Due to the low rates of missingness, I chose not to impute missing observations and records with missing data were dropped from the analysis.
+
+
+
+```{r}
+library(baseballr)
+library(tidyverse)
+library(knitr)
+
+statcast_data_2021 <- 
+  readRDS("~/CMSAC-Baseball-Project/data/statcast_data_2021.rds")
+names(statcast_data_2021)[1] <- 'pitch_id'
+```
+
+
+```{r}
+atbat_ending_events <- c("triple" , "field_out", "double" , "grounded_into_double_play", "strikeout_double_play" , "sac_fly_double_play" , "hit_into_play", "hit_by_pitch" , "bunt_foul_tip" , "single", "strikeout" , "sac_bunt", "home_run" , "sac_fly" , "hit_by_pitch" , "catcher_interf" , "other_out" , "sac_bunt_double_play" , "foul_tip" ,"triple_play", "fielders_choice" , "double_play", "fielders_choice_out" , "field_error" ,"force_out", "walk")
+```
+
+```{r}
+batters_w_50_atbats <- statcast_data_2021 %>%
+  filter(events %in% atbat_ending_events) %>%
+  group_by(batter) %>%
+  count() %>%
+  filter(n >= 50) %>%
+  pull(batter)
+  
+```
+
+```{r}
+statcast_data_filtered <- statcast_data_2021 %>%
+  filter(game_type !="E", game_type != "S") %>%
+  filter(type == "X") %>%
+  filter(zone %in% c(1,2,3,7,8,9)) %>%
+  filter(if_fielding_alignment == "Standard") %>%
+  mutate(zone_high_low = case_when(zone %in% c(1,2,3) ~ "High Strike",
+                                   zone %in% c(7,8,9) ~ "Low Strike")) %>%
+  filter(batter %in% batters_w_50_atbats) %>%
+  filter(pitch_type != "EP", pitch_type != "KN", pitch_type != "CS") %>%
+  mutate(pitch_type = fct_recode(pitch_type,
+                                    "Fastball" = "FC",
+                                    "Fastball" = "FF",
+                                    "Fastball" = "FS",
+                                    "Fastball" = "SI",
+                                    "Fastball" = "FA",
+                                    "Changeup" = "CH",
+                                    "Breaking ball" = "CU",
+                                    "Breaking ball" = "KC",
+                                    "Breaking ball" = "SL")) %>%
+  mutate(pitch_type = factor(pitch_type, levels = c("Fastball", "Changeup", "Breaking ball"))) 
+
+#pitch_type != "FA", 
+```
+
+## EDA
+
+Because of the vague wording of the definition of the strikezone and the dependency the called strikezone has on the judgement of the umpire, I have included a plot displaying the X and Z coordinates of all high and low strikes relevant to this analysis. In this case, the x-axis refers to the horizontal distance of the pitch from the center of home plate (in ft) while the y-axis refers to the height of the pitch (in ft) as it crosses home plate. This plot helps us visualize the difference between high and low strikes as was observed in 2021. As there is no definitive cutoff for the top or bottom of the strikezone, understanding the observed heights of these strikes is important to understanding how pitch location may be related to balls in play. As is shown, the observed bottom of the strikezone appears to be slightly below 1.5 ft while the observed top of the strikezone appears to be slightly above 3.5 ft. Noticeably, both the observed top region and bottom region of the strikezone appear to be around a foot in height each, which is taller than the portion of the strikezone deemed the vertical middle.
+
+```{r fig.height = 3}
+statcast_data_filtered %>%
+  ggplot(aes(x = plate_x, y = plate_z, color = zone_high_low)) +
+  geom_point(alpha = .1) +
+  theme_bw() +
+  coord_equal() +
+  labs(title = "Height of high strikes around 3 ft, \nheight of low strikes around 2 ft",
+       x = "Horizontal loction of pitch (ft from center of the strikezone)",
+       y = "Vertical loction of pitch \n(ft from the ground)",
+       caption = "Visualizing the 2021 strikezone, locations of high and low strikes",
+       color = "Strike location")
+  
+```
+
+Due to the overwhelming number of observations, in order to gain insight on the proportions of batted ball types on different pitch locations and the frequency with which they result in a successful hit, I took a representative random sample of the observed pitches from my filtered data, maintaining the relative proportions of high to low strikes (using randomization seed 2134 for reproducibility). In my sampling of the data I included 2000 observations, 1249 low strikes and 751 high strikes. I used this sample to visualize the location of pitches, their resulting batted ball type, and whether the batted ball was a success. Looking at the results, while it seems that the proportions of successful fly balls on high and low strikes may be similar, there appears to be differences in the frequency with which other batted ball types are successful on high and low strikes. For ground balls, it seems there may be more ground balls hit on low strikes than high strikes while ground balls on low pitches may have a lower proportion of success than ground balls on high pitches. Similar observations can be made about more line drives resulting from low strikes than high strikes. Popups seem to occur more frequently on high strikes than low strikes, but are overall less frequent than other batted ball types. From this visualization, we conclude that it would be useful to consider the batted ball type in the modeling as it may help explain additional patterns in the data.
+
+```{r}
+set.seed(2134)
+sampled_statcast_data_low <- statcast_data_filtered %>%
+  filter(zone_high_low == "Low Strike") %>%
+  sample_n(round(2000 * 0.6244267), 0) %>%
+  mutate(bb_type_format = case_when(bb_type == "fly_ball" ~ "Fly Ball",
+                                    bb_type == "ground_ball" ~ "Ground Ball",
+                                    bb_type == "line_drive" ~ "Line Drive",
+                                    bb_type == "popup" ~ "Popup"))
+  
+sampled_statcast_data_high <- statcast_data_filtered %>%
+  filter(zone_high_low == "High Strike") %>%
+  sample_n(round(2000 * 0.3755733), 0) %>%
+  mutate(bb_type_format = case_when(bb_type == "fly_ball" ~ "Fly Ball",
+                                    bb_type == "ground_ball" ~ "Ground Ball",
+                                    bb_type == "line_drive" ~ "Line Drive",
+                                    bb_type == "popup" ~ "Popup"))
+
+sampled_statcast_data <- sampled_statcast_data_low %>%
+  rbind(sampled_statcast_data_high)
+
+prop_high_and_low_strikes <- statcast_data_filtered %>%
+  group_by(zone_high_low) %>%
+  count() %>%
+  ungroup() %>%
+  summarize(zone_high_low, n, prop = n/sum(n))
+
+sampled_statcast_data %>%
+  ggplot(aes(x = plate_x, y = plate_z, color = as.factor(babip_value))) +
+  geom_point(alpha = .3) +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  coord_equal() +
+  facet_wrap(~bb_type_format, nrow = 1) +
+  labs(title = "Potential evidence of different relationships between \nBatted Ball Types and Vertical Pitch Location",
+       x = "Horizontal loction of pitch (ft from center of the strikezone)",
+       y = "Vertical loction of pitch (ft from the ground)",
+       caption = "Visualizing the pitch locations of different batted balls,\nusing random sample of 1249 observed low strikes and 751 observed high strikes",
+       color = "Batted Ball (Success/Failure)")
+  
+```
+
+
+
+# Methodology
+
+To explore the relationship between the vertical location of a pitch and whether the hit resulted in a successful batted ball, it is necessary to account for pitch characteristics that I expect may be associated with greater/reduced odds of the resulting batted ball being successful, based on my existing knowledge of baseball and batting. First, I control for player relevant characteristics like pitcher handedness and batter stance side as these are characteristics relevant to describing each batted ball event and could potentially help explain patterns in the data that may differ by pitcher or batter handedness. I also control for the release speed of the pitch and the type of pitch as these characteristics are likely to have some association with the difficulty of hitting a given pitch. Controlling for the launch speed of the ball off the bat aims to account for the strength of the batter and caliber of contact (solid vs. weak contact) and also the assumption that the strength of the hit likely has some association with the success of the hit. According to the apparent nonlinear relationship between launch angle and the log odds of a successful batted ball, this variable has been transformed by a power of 5 as is discussed in Model Assumptions. Lastly, the type of hit is controlled for as different types of hits require different types of plays to be made by the defense and the difficulty of these plays potentially contribute to the odds that a hit is successful. In our correlation plot (Appendix D), we see that there are generally low correlations between all of the covariates in our model. Note that low strikes and high strikes have a perfect correlation of -1 by design of the analysis, so we disregard this value. Also note that there are two other instances with correlations equal to or less than -0.5, but these either only show moderate correlation with a single level of a categorical variable (release speed and breaking balls) or events that would not occur at the same time (line drives and ground balls), so these variables are left in the model.
+
+In addition to the main effects described above, I believe interaction effects between the type of batted ball and the pitch location (high/low) would also be interesting to examine. Specifically, I know from personal experience and background knowledge that it is more natural to hit high pitches up and more natural to hit low pitches down based on swing angles. This is why I suspect that different types of batted balls with different pitch locations may have different associations with the odds of that batted ball resulting in the batter successfully getting on base. I theorize that these batted ball type and pitch location pairings may have some correlation with the strength of contact (solid vs. weak contact) or other descriptive measures of the hit, which might contribute to different associations with the odds of a successful batted ball.
+
+In this analysis, I consider each of the described pitcher and batter characteristics, pitch characteristics, hit characteristics, and interaction terms to be important covariates to account for in order to investigate whether there is an association between the pitch being a high or low strike and the odds of the resulting batted ball event being successful. I proceed with a logistic regression model for a few reasons. For starters, the logistic regression model is appropriate to use when the response variable is binary, as the pitch-level BABIP is. Second, I am interested in the association between these predictors and the odds of a batted ball event being successful and the logistic regression model can be easily interpreted in such a way. However, my confidence in the results of this model are potentially limited by the violation of certain model assumptions/diagnostics as I discuss in the following Assumptions and Diagnostics section.
+
+
+$$
+\begin{aligned}
+\log(\frac{p_i}{1 - p_i}) &= \beta_0+\beta_1(\text{Pitch Zone (Low)}_i)+\beta_2(\text{Pitch Type (Changeup)}_i)
+\\&+\beta_3(\text{Pitch Type (Breaking Ball)}_i)+\beta_4(\text{Pitch Release Speed}_i)+\beta_5(\text{Batter Stance Side (Right)}_i)
+\\&+\beta_6(\text{Pitcher Handedness (Right)}_i)+\beta_7(\text{Batted Ball Type (Ground Ball)}_i)
+\\&+\beta_8(\text{Batted Ball Type (Line Drive)}_i)+\beta_{9}(\text{Batted Ball Type (Popup)}_i)+\beta_{10}(\text{Launch Speed}^5_i)
+\\&+\beta_{11}(\text{(Pitch Zone (Low)*Batted Ball Type (Ground Ball))}_i)
+\\&+\beta_{12}(\text{(Pitch Zone (Low)*Batted Ball Type (Line Drive))}_i)
+\\&+\beta_{13}(\text{(Pitch Zone (Low)*Batted Ball Type (Popup))}_i)
+\end{aligned}
+$$
+
+Where $i$ refers to each pitch resulting in a batted ball event and $p$ refers to the predicted probability of a successful batted ball.
+
+
+```{r}
+logit_model <- glm(babip_value ~ zone_high_low + pitch_type + release_speed + stand + p_throws + bb_type + (launch_speed)^5 + zone_high_low * bb_type, data = statcast_data_filtered, family = "binomial")
+
+#summary(logit_model)
+```
+
+### Model Assumptions and Diagnostics
+
+One assumption of a logistic regression is the independence of observations included in the data. This independence assumption is violated due to there being multiple observations for the same batter and multiple observations for the same pitcher. Although the scope of the data is also limited to only a single pitch per at-bat, there are still multiple observations per game and team. Situational elements like score, outs, weather, defense, etc. also potentially contribute to non-independence. Still, considering the mentality of players that one play should not affect the next and the relative randomness of sports data, I chose to continue with this model under the assumption that the data may not be completely dependent on each other. However, this violation of independence will affect confidence in my results, as is discussed in Limitations.
+
+The logistic model assumes that there is a linear relationship between the logit of the outcome and each predictor variable. To check the linearity assumption, empirical logit plots were observed to assess the relationships between the continuous predictor variables launch speed and release speed and the log odds of the outcome variable (Appendix E). In regard to the empirical logit plot for release speed, it appears that release speed is relatively linearly associated with the log odds of whether batted balls are successful or not. However, because the empirical logit plot for launch speed shows linearity being violated considering the presence of a strong "U" shape, it is evident that launch speed does not have a linear relationship with the log odds of whether batted balls are successful or not. To avoid this linearity violation, I instead include a transformed version of launch speed (launch speed$~^5$) as it has a much more linear relationship with the log odds of whether batted balls are successful or not.
+
+In assessing the fit of this model and its inferential purpose, I chose to examine the binned deviance residuals as a method of providing a rough idea of model fit (Appendix F). I decided to use deviance residuals rather than standardized residuals because the model is a generalized linear model (GLM) seeking to maximize the log likelihood function and thus deviance is a useful goodness-of-fit statistic. A small bin width of 0.01 was used to ensure many bins of average residuals vs average fitted value, allowing us to summarize our model fit while still showing more localized patterns in deviance residuals. Typically, we would expect these binned deviance residuals to be scattered around 0 to suggest good model fit. However, when examining this model, the binned deviance residuals show a oscillating pattern. Despite this just being one way to assess goodness-of-fit, it is important to acknowledge that there may be additional explanatory variables not included in the model that would help explain these patterns in deviance. Although this model is not a perfect fit, I will proceed to discuss the relationships suggested by the model, as they still offer some insight into my research question. Moving forward, however, it is necessary to keep in mind the presence of additional patterns unexplained by my model and how this potentially detracts from confidence in my results.
+
+
+# Results
+
+```{r}
+library(broom)
+library(knitr)
+tidy_logit_model <- tidy(logit_model)
+
+exp_model_coefs <- as_tibble(exp(tidy_logit_model$estimate))
+
+conf_int <- confint(logit_model)
+model_conf_int_2.5 <- as_tibble(exp(conf_int))[,1]
+model_conf_int_97.5 <- as_tibble(exp(conf_int))[,2]
+
+model_variables <- as_tibble(c(names(logit_model$coefficients)))
+
+
+model_pvals <- as.data.frame(coef(summary(logit_model))[,4])[,1]
+
+
+Variables <- c("(Intercept)", "Pitch Zone (Low)", "Pitch Type (Changeup)", "Pich Type (Breaking Ball)", "Release Speed", "Batter Stance Side", "Pitcher Handedness", "Batted Ball Type (Ground Ball)", "Batted Ball Type (Line Drive)", "Batted Ball Type (Popup)", "Launch Speed^5", "Pitch Zone (Low)*Batted Ball Type (Ground Ball)", "Pitch Zone (Low)*Batted Ball Type (Line Drive)", "Pitch Zone (Low)*Batted Ball Type (Popup)")
+
+model_output_full <- data.frame(Variables, 
+           exp_model_coefs, 
+           model_conf_int_2.5,
+           model_conf_int_97.5, 
+           model_pvals) %>%
+   mutate(model_pvals = if_else(model_pvals < 0.001, 0.000, model_pvals),
+         model_pvals = ceiling(model_pvals*1000)/1000,
+        model_pvals = as.character(model_pvals),
+        model_pvals = if_else(model_pvals == "0", "<0.001", model_pvals)) %>% 
+  kable(digits = 3, col.names = c("Variables", "Odds Ratio Coefficient", "95% Odds Ratio CI Lower Bound", "95% Odds Ratio CI Upper Bound", "P-Value (alpha = 0.05)"), caption = "Results of logistic regression model", align = 'lrrrr')
+
+model_output_full
+
+
+```
+
+
+In examining the results of the logistic regression model (Table 1 above), I was first interested in examining associations between the odds of a successful batted ball event and the location of the pitch, high or low. I found evidence of a significant association between the vertical pitch location and the odds of a successful batted ball, holding all other variables constant. That is, for pitches that resulted in a fly ball, I found that those that were low strikes were expected to have 1.163 times the odds of being a successful hit compared to a high strike. We found that the confidence interval for this estimate does not cross 1 ([1.002, 1.350]), so there is evidence of significant association between the odds of a successful hit and vertical pitch location, for these pitches.
+
+
+However, I then proceeded to look closer into pitch location by looking at interaction effects between whether the pitch was a high or low strike and the type of batted ball. In doing so, I found evidence of a significant association between the pitch location and the batted ball being a ground ball, with all other variables held constant. That is, for pitches that are low strikes, batted balls that are ground balls are expected to have 1.905 [1.627, 2.230] times the odds of being a successful hit compared to those resulting from a high strike. That means that ground balls are associated with higher odds of a successful hit when the pitch is a low strike, but separately ground balls on low strikes do not seem to be associated with as great of a positive increase to the odds in comparison to other types of batted balls on low strikes. This is interesting because although the increase in the odds is expected according to my original justification of including this interaction effect, its comparison to the interaction effects of other types of batted balls on low strikes is not something I had expected.
+
+Among the variables I controlled for, I noticed that for high strikes, the type of batted ball has significant associations with the odds of a successful hit. Holding all other variables in the model constant, for high strikes resulting in line drives the odds of a successful hit are expected to increase by a factor of 14.353 ([12.603, 16.381]) compared to fly balls. This made sense as line drives are typically hard hit balls but lack the elevation that potentially allows the defense higher chances of making a catch. Holding all other variables in the model constant, for high strikes resulting in ground balls the odds of a successful hit are expected to increase by a factor of 4.146 ([3.643, 4.727]) compared to fly balls. I was slightly surprised by this relationship in comparison to fly balls because it suggests ground balls are more likely to result in a successful hit than a fly ball on high strikes. As fly balls are often the byproduct of failed homerun attempts, this association supports the idea that aiming to put balls in play rather than prioritizing homeruns may increase game action due to more successful balls in play. Holding all other variables in the model constant, for high strikes resulting in popups the odds of a successful hit are expected to decrease by a factor of 0.192 ([0.119, 0.292]) compared to fly balls. This is not surprising at all as popups are simply fly balls that don't reach the outfield, and with a higher density of infielders than outfielders in their respective areas, they are more likely to be caught.
+
+Interestingly, there was not evidence of statistically significant associations between the odds of a successful batted ball and pitcher related variables like the pitcher handedness, the release speed, or the type of pitch.
+
+
+# Discussion
+
+Given the current state of Major League Baseball and its strikezone, I had hypothesized that hitting low strikes would be associated with reduced odds of a successful batted ball. From the model, it was observed that this general trend was not supported. According to the model, in comparison to high strikes, batted balls on low strikes generally have increased odds of being a successful hit when controlling for other characteristics about the play, pitch, and batted ball, and interactions between vertical pitch location and batted ball type. The model also found evidence to support the intuition that different types of batted balls have different associations with the odds of a batted ball being successful. Interestingly, there was evidence that ground balls on high strikes were more likely to result in a successful batted ball that fly balls hit on high strikes, holding all else constant. As mentioned, because fly balls are often the byproduct of failed homerun attempts, this association supports the idea that aiming to put balls in play rather than prioritizing homeruns may increase game action due to more successful balls in play. Thus, this analysis seems to support both hitting low pitches and avoiding hitting popups and fly balls to increase game action for fans.
+
+While these are interesting observations, it is important to consider that changing the strikezone or batting goals and swing behavior of players is not a simple or easy way to increase game action. For starters, shifting the strikezone would completely change pitching tendencies and pitching form and would require a gradual shift beginning with young players. Secondly, asking batters to change their mentalities and swings is not as simple as it sounds and is likely not a realistic expectations of professional athletes who have trained their whole lives and are likely fixed in their ways.
+
+## Limitations and Future Directions
+
+The limitations of this research mainly lie in the scope of my research question and the model. To start, the intense filtering of the data prior to beginning my analysis may have prevented my model's ability to fully capture patterns in the data relevant to high and low strikes. For example, plays with an infield shift in place may have observed different associations or patterns that I missed by choosing to focus on plays with defensive alignments following rules that are soon to be implemented. I aimed to preserve the interpretability of this logistic regression model by limiting the examined scenarios and by only selecting variables that would allow me to do so. Thus, there are other possible covariates that might have improved this analysis had I controlled for them (such as pitch spin rate or launch angle), which I chose not to prioritize in this research.
+
+Another limitation of this model is its reliance on defensive action and skill. Because I chose to only consider balls hit in play, the deciding factor of whether the hit is successful or not depends on if the defense was successful in playing the ball and getting the batter out. Without quantifying or controlling for the defense's contribution to the play outcome, this analysis may be missing additional patterns in the data.
+
+Also, it is crucial to consider the assumption violations this model makes in regards to independence. As this data includes repeated observations with the same pitcher and repeated observations with the same batter, the observations are not completely independent. However, because I was not interested in the variation within or between these players and their tendencies, I chose to proceed with the model as is. I made this decision in part due to guidance I have received in the past from professional baseball analysts, considering different at-bats to be at least relatively independent due to situational differences and the inherent randomness of sports. Still, it is necessary to place emphasis on the fact that confidence in my results and interpretations must be hedged due to this independence violation.
+
+Additionally, by filtering for only batted ball events, I exclude the observations where high or low pitches result in a swinging or looking strike. While these instances don't necessarily pertain to my research question, they are relevant to considering the overall associations between high and low strikes and game action. In the future, I would like to also consider the associations between pitch location and strikeout probability as reducing strikeout rates would also be a method of potentially increasing game action.
+
+Separately, it would be interesting to consider the further implications of changing the strikezone such as how pitcher's pitch choice would change to best take advantage of a new strikezone.
+
+
+
+
+
+# References
+
+Edwards, C. (2018, June 15). A bigger strike zone is a bad idea. FanGraphs Baseball. Retrieved December 16, 2022, from https://blogs.fangraphs.com/a-bigger-strike-zone-is-a-bad-idea/ 
+
+Edwards, C. (2018, June 21). What a smaller strike zone can do for pace of play. FanGraphs Baseball. Retrieved December 16, 2022, from https://blogs.fangraphs.com/what-a-smaller-strike-zone-can-do-for-pace-of-play/ 
+
+Petti B, Gilani S (2022). baseballr: Acquiring and Analyzing Baseball Data. https://billpetti.github.io/baseballr/, https://github.com/BillPetti/baseballr
+
+Sarris, E. (2017, August 18). How would we increase balls in play? FanGraphs Baseball. Retrieved December 16, 2022, from https://blogs.fangraphs.com/how-would-we-increase-balls-in-play/ 
+
+Strikezone: Glossary. MLB.com. (n.d.). Retrieved December 16, 2022, from https://www.mlb.com/glossary/rules/strike-zone 
+
+Three True Outcomes: Glossary. MLB.com. (n.d.). Retrieved December 16, 2022, from https://www.mlb.com/glossary/idioms/three-true-outcomes
+
+What are the pitch types generated from MLB Statcast for speed of pitch? Daktronics. (n.d.). Retrieved December 16, 2022, from https://www.daktronics.com/en-us/support/kb/DD3312647 
+
+
+\pagebreak
+
+
+# Appendix
+
+### A: At-bat ending events
+
+The following are considered at-bat ending events:
+
+- Triples, fielded outs, doubles, grounding into double plays, strikeout double plays, sacrifice fly double plays, hitting into plays, hit by pitches, bunt foul tips, singles, strikeouts, sacrifice bunts, homeruns, sacrifice flies, catcher interference, other non-specified outs, sacrifice bunt double plays, foul tips, triple plays, fielders choices, double plays, fielders choice outs, field errors, force outs, and walks
+
+
+```{r}
+statcast_data_2021 %>%
+  filter(events %in% atbat_ending_events) %>%
+  group_by(batter) %>%
+  count() %>%
+  ggplot(aes(x = n)) +
+  geom_histogram() +
+  theme_minimal() +
+  labs(title = "Many players have very few at-bats within the 2021 season",
+       x = "Number of at-bats",
+       y = "Frequency",
+       caption = "Appendix Plot A: Distribution of number of at-bats players completed")
+```
+
+
+### B: Proportions of pitch types
+
+The following are the Pitch Types generated:
+
+- AB Automatic Ball, AS Automatic Strike, CH Change-up, CU Curveball, EP Eephus, FA Fastball, FC Cutter, FF Four-Seam Fastball, FO Forkball, FS Splitter, FT Two-Seam Fastball (synonymous with SI), GY Gyroball, IN Intentional Ball, KC Knuckle Curve, KN Knuckleball, NP No Pitch, PO Pitchout, SC Screwball, SI Sinker (synonymous with FT), SL Slider
+
+```{r}
+statcast_data_2021 %>%
+  group_by(pitch_type) %>%
+  count() %>%
+  ungroup() %>%
+  summarize(pitch_type, prop = n/sum(n)) %>%
+  ggplot(aes(x = pitch_type, y = prop)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(title = "Many pitch types are not thrown often across the league",
+       x = "Abbreviated pitch type",
+       y = "Percent thrown",
+       caption = "Appendix Plot B: Proportions of different pitches thrown")
+```
+
+
+
+### C: Missing data
+
+```{r}
+library(naniar)
+statcast_data_filtered %>% 
+  select(c(zone_high_low, pitch_type, 
+         release_speed, stand, p_throws, bb_type, launch_speed)) %>%
+  gg_miss_var() + 
+  theme(plot.caption = element_text(size = 12)) +
+  ylab("# Missing (total N = 25,764)") +
+  labs(caption = "Appendix Plot C: Number of missing observations",
+       title = "Low rates of missingness across all covariates")
+```
+
+
+## D: Correlations between model covariates
+
+```{r fig.height=7, fig.width=7}
+library(ggcorrplot)
+
+statcast_data_filtered_varlabels <- statcast_data_filtered %>% 
+  rename("Pitch Location" = zone_high_low,
+         "Pitch Type" = pitch_type,
+         "Release Speed" = release_speed,
+         "Batter Stance Side" = stand,
+         "Pitcher Handedness" = p_throws,
+         "Batted Ball Type" = bb_type,
+         "Launch Speed" = launch_speed)
+
+model.matrix(~0+., statcast_data_filtered_varlabels %>% 
+               select(c(`Pitch Location`, 
+                        `Pitch Type`, `Release Speed`, `Batter Stance Side`, 
+                        `Pitcher Handedness`, `Batted Ball Type`, 
+                        `Launch Speed`))) %>% 
+  cor(use="pairwise.complete.obs") %>% 
+  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2) +
+  theme(plot.caption = element_text(size = 12)) +
+  labs(caption = "Appendix Plot D: Correlations between model covariates",
+       title = "Generally Low correlation between covariates")
+```
+
+
+## Model Diagnostics
+
+### E: Linearity Assumptions
+
+```{r}
+emplogit = function(x, y, binsize = NULL, ci = FALSE, probit = FALSE,
+                    prob = FALSE, main = NULL, xlab = "", ylab = ""){
+
+  if (length(x) != length(y))
+    stop("x and y lengths differ")
+  if (any(y < 0 | y > 1))
+    stop("y not between 0 and 1")
+  if (length(x) < 100 & is.null(binsize))
+    stop("Less than 100 observations: specify binsize manually")
+  if (is.null(binsize)) binsize = min(round(length(x)/10), 50)
+  if (probit){
+    link = qnorm
+    if (is.null(main)) main = "Empirical probits"
+  } else {
+    link = function(x) log(x/(1-x))
+    if (is.null(main)) main = "Empirical logits"
+  }
+  sort = order(x)
+  x = x[sort]
+  y = y[sort]
+  a = seq(1, length(x), by=binsize)
+  b = c(a[-1] - 1, length(x))
+  prob = xmean = ns = rep(0, length(a)) # ns is for CIs
+  for (i in 1:length(a)){
+    range = (a[i]):(b[i])
+    prob[i] = mean(y[range])
+    xmean[i] = mean(x[range])
+    ns[i] = b[i] - a[i] + 1 # for CI 
+  }
+  extreme = (prob == 1 | prob == 0)
+  prob[prob == 0] = min(prob[!extreme])
+  prob[prob == 1] = max(prob[!extreme])
+  g = link(prob) # logits (or probits if probit == TRUE)
+  linear.fit = lm(g[!extreme] ~ xmean[!extreme])
+  b0 = linear.fit$coef[1]
+  b1 = linear.fit$coef[2]
+  loess.fit = loess(g[!extreme] ~ xmean[!extreme])
+    plot(xmean, g, main=main, xlab=xlab, ylab=ylab)
+    abline(b0,b1)
+    lines(loess.fit$x, loess.fit$fitted, lwd=2, lty=2)
+}
+```
+
+Appendix Plot E.1:
+
+```{r fig.height = 3}
+emplogit(statcast_data_filtered$release_speed, statcast_data_filtered$babip_value, main="Release speed empirical logits", xlab = "Release Speed",
+              ylab = "Log Odds")
+```
+
+Appendix Plot E.2:
+
+```{r fig.height = 3}
+emplogit(statcast_data_filtered$launch_speed, statcast_data_filtered$babip_value, main="Launch speed empirical logits", xlab = "Launch Speed",
+              ylab = "Log Odds")
+```
+
+
+Appendix Plot E.2:
+
+```{r fig.height = 3}
+emplogit(statcast_data_filtered$launch_speed^5, statcast_data_filtered$babip_value, main="(Launch speed)^5 empirical logits", xlab = "(Launch Speed)^5",
+              ylab = "Log Odds")
+```
+
+### F: Model Fit
+
+```{r}
+f_dev = augment(logit_model, type.predict = "response", type.residuals = "deviance")
+f_resid = bind_rows(
+  f_dev  %>%  mutate(type = "deviance")
+) %>%
+  mutate(type = as_factor(type))
+```
+
+```{r}
+bin_width = 0.01
+f_resid_bin <- f_resid %>% 
+  group_by(type) %>% 
+  mutate(bin = .fitted - (.fitted %% bin_width) + bin_width / 2) %>% 
+  group_by(type, bin) %>% 
+  summarize(.resid_bin = mean(.resid), .groups="drop")
+```
+
+```{r include = T, fig.width = 5, fig.height = 3}
+residual_plot <- f_resid_bin %>% 
+  filter(type == "deviance") %>% 
+  mutate(type = as_factor(type)) %>% 
+  ggplot(aes(x=bin, y=.resid_bin)) +
+  geom_point() +
+  labs(y = "Deviance Residuals",
+       x = "Fitted Values",
+       title = "Oscillating pattern of binned \ndeviance residuals for logistic model",
+       caption = "Appendix plot F: Assessing residuals of logistic model")  +
+  theme_minimal()
+residual_plot
+```
+
+
+## G: Proportions of High and Low Strikes
+
+```{r}
+prop_high_and_low_strikes %>%
+  kable(digits = 4, col.names = c("Vertical Pitch Loction", "Frequency", "Proportion"), caption  = "Determining the proportions of high and low strikes in 2021")
+```
+
