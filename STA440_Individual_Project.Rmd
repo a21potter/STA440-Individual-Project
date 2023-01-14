@@ -177,7 +177,7 @@ In this analysis, I consider each of the described pitcher and batter characteri
 
 $$
 \begin{aligned}
-\log(\frac{\hat{p_i}}{1 - \hat{p_i}}) &= \beta_0+\beta_1(\text{Pitch Zone (Low)}_i)+\beta_2(\text{Pitch Type (Changeup)}_i)
+\log(\frac{p_i}{1 - p_i}) &= \beta_0+\beta_1(\text{Pitch Zone (Low)}_i)+\beta_2(\text{Pitch Type (Changeup)}_i)
 \\&+\beta_3(\text{Pitch Type (Breaking Ball)}_i)+\beta_4(\text{Pitch Release Speed}_i)+\beta_5(\text{Batter Stance Side (Right)}_i)
 \\&+\beta_6(\text{Pitcher Handedness (Right)}_i)+\beta_7(\text{Batted Ball Type (Ground Ball)}_i)
 \\&+\beta_8(\text{Batted Ball Type (Line Drive)}_i)+\beta_{9}(\text{Batted Ball Type (Popup)}_i)+\beta_{10}(\text{Launch Speed}^5_i)
@@ -187,7 +187,7 @@ $$
 \end{aligned}
 $$
 
-Where $i$ refers to each pitch resulting in a batted ball event and $\hat{p}$ refers to the predicted probability of a successful batted ball.
+Where $i$ refers to each pitch resulting in a batted ball event and $p$ refers to the predicted probability of a successful batted ball.
 
 
 ```{r}
